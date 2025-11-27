@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>(ToDo App)</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: #f8fafc;
+        color: #1e293b;
+        line-height: 1.6;
+        padding: 30px 20px;
+        margin: 10px auto;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 100px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        text-align: center;
+        color: #059669;
+        margin-bottom: 40px;
+        font-size: 2rem;
+      }
+      .add-task {
+        max-width: 600px;
+        margin: 0 auto 40px;
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        display: flex;
+        gap: 10px;
+      }
+      .add-task input[type="text"] {
+        flex: 1;
+        padding: 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+      }
+      .add-task input[type="text"]:focus {
+        outline: none;
+        border-color: #4f46e5;
+      }
+      .add-task button[type="submit"] {
+        padding: 14px 28px;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      .add-task button[type="submit"]:hover {
+        background: #059669;
+        transform: scale(1.05);
+      }
+      #taskList {
+        max-width: 600px;
+        margin: 0 auto;
+        list-style: none;
+      }
+      .task-item {
+        background: #f1f5f9;
+        padding: 16px;
+        margin: 20px 0;
+        border-radius: 12px;
+        border-right: 4px solid #818cf8;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+      }
+      .task-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      }
+      .task-item span {
+        font-size: 1.1rem;
+        flex: 1;
+      }
+      .delete-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: 0.3s;
+      }
+      .delete-btn:hover {
+        background: #dc2626;
+      }
+      .no-tasks {
+        text-align: center;
+        color: #64748b;
+        font-size: 1.2rem;
+        padding: 40px;
+        background: white;
+        border-radius: 18px;
+        margin: 0 auto;
+        max-width: 600px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <div 
+      style="display: flex; align-items: center; justify-content:space-between; gap: 0px; margin: 10 auto;"
+      >
+        <h2>Todo List : <span><%= user.username %></span><h2/>
+        <button class="delete-btn" onclick="logout()">
+            logout
+        </button>
+      </div>
+
+      <form class="add-task" action="/todos" method="POST">
+        <input
+          type="text"
+          name="title"
+          placeholder="Add new todo..."
+          maxlength="100"
+          required
+        />
+        <button type="submit">Add</button>
+      </form>
+
+      <ul id="taskList">
+        <% if (todos && todos.length > 0) { %> <% todos.forEach(function(todo) {
+        %>
+        <li class="task-item">
+          <span><%= todo.title %></span>
+          <button class="delete-btn" onclick="deleteTask('<%= todo._id %>')">
+            Delete
+          </button>
+        </li>
+
+        <% }); %>
+        <div
+          style="display: flex; align-items: center; justify-content: center"
+          id="deleteAllBtn"
+        >
+          <button class="delete-btn" onclick="deleteAllTasks()">
+            Delete All
+          </button>
+        </div>
+        <% } else { %>
+        <div class="no-tasks">No rodos yet</div>
+        <% } %>
+      </ul>
+    </div>
+
+    <script>
+      async function deleteTask(id) {
+        if (confirm("are you sure")) {
+          try {
+            const response = await fetch(`/todos/${id}`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+            location.reload();
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || "error in delete");
+            }
+          } catch (error) {
+            console.error("error:", error);
+            alert("delete error:" + error.message);
+          }
+        }
+      }
+      async function deleteAllTasks() {
+        if (!confirm("are you sure")) return;
+
+        try {
+          const response = await fetch("/todos/del/all", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          });
+          location.reload();
+        } catch (error) {
+          console.error("خطأ:", error);
+          alert("error: " + error.message);
+        }
+      }
+      async function logout() {
+        if (!confirm("are yoy sure to logout")) return;
+
+        try {
+          const response = await fetch("/users/logout", {
+            method: "POST",
+          });
+          window.location.href= "/users/login/user"
+        } catch (error) {
+          console.error("خطأ:", error);
+          alert("error: " + error.message);
+        }
+
+      }
+    </script>
+
+  </body>
+</html>
