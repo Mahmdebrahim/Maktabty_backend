@@ -48,6 +48,20 @@ const userSchema = new mongoose.Schema(
         ref: "Book",
       },
     ],
+    cart: [
+      {
+        book: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Book",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          default: 1,
+          min: 1,
+        },
+      },
+    ],
     orders: [
       {
         type: mongoose.Schema.Types.ObjectId,
