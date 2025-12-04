@@ -1,6 +1,6 @@
 const UserModel = require("../models/users.js");
 const BookModel = require("../models/books.js");
-const AppError = require("../helpers/appError");
+const AppError = require("../helpers/appError.js");
 
 // ** add the book to fav List
 const addTofavorites = async (req, res, next) => {
@@ -28,8 +28,9 @@ const addTofavorites = async (req, res, next) => {
 
 // ** get all books ni fav List
 const getAllFavorites = async(req, res, next) => {
-    const favList = await UserModel.findById(req.user.userId).select
-    ("favorites")
+    const favList = await UserModel.findById(req.user.userId)
+      .select("favorites")
+      .populate("favorites");
 
     if(!favList) return next(new AppError("favorites List is not found",404))
 

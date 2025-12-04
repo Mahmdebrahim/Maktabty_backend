@@ -5,7 +5,7 @@ const {
   addTofavorites,
   getAllFavorites,
   checkFavorite,
-} = require("../controllers/favoriteController.js");
+} = require("../controllers/favoriteControllers.js");
 
 
 

@@ -4,14 +4,18 @@ const authMW = require("../middlewares/auth.js");
 const {
   addToCart,
   updateCartItem,
-} = require("../controllers/cartController.js");
+  removeFromCart,
+  getCart,
+} = require("../controllers/cartControllers.js");
 
 
 router.post("/", authMW, addToCart);
 
 router.put("/:bookId", authMW, updateCartItem);
 
+router.delete("/remove/:bookId", authMW, removeFromCart);
 
+router.get("/", authMW, getCart);
 
 
 

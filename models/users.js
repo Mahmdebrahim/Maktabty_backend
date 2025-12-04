@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: [true, "الاسم مطلوب"],
+      required: [true, "Username is required"],
       trim: true,
       minlength: [3, "username is too short"],
       maxlength: [50, "username is too long"],
@@ -60,6 +60,15 @@ const userSchema = new mongoose.Schema(
           default: 1,
           min: 1,
         },
+        price: {
+          type: Number,
+          required: true,
+        },
+        // seller:{
+        //   type: mongoose.Schema.Types.ObjectId,
+        //   ref: "User",
+        //   required: true,
+        // }
       },
     ],
     orders: [
@@ -84,12 +93,6 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
-userSchema.pre("save", function (next) {
-  if (this.books && this.books.length > 0) {
-    this.isSeller = true;
-    if (this.role === "user") this.role = "seller";
-  }
-  next();
-});
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;

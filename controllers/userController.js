@@ -1,3 +1,4 @@
+const AppError = require("../helpers/appError.js");
 const UserModel = require("../models/users.js");
 
 const getMyProfile = async (req, res, next) => {
@@ -9,6 +10,9 @@ const getMyProfile = async (req, res, next) => {
 };
 
 const updateMyProfile = async (req, res, next) => {
+  if (req.body.role == "admin") {
+    return next(new AppError("can not change the role to admin",403))
+  }
   const user = await UserModel.findByIdAndUpdate(req.user.userId, req.body, {
     $set: req.body,
     new: true,

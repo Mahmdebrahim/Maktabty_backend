@@ -1,6 +1,6 @@
 const UserModel = require("../models/users.js");
 const BookModel = require("../models/books.js");
-const AppError = require("../helpers/appError");
+const AppError = require("../helpers/appError.js");
 
 
 const addToCart = async (req, res, next) => {
@@ -19,7 +19,9 @@ const addToCart = async (req, res, next) => {
     } else {
       user.cart.push({
         book:bookId,
-        quantity
+        quantity,
+        price: book.price,
+        seller: book.seller,
       })
     }
 
@@ -31,7 +33,6 @@ const addToCart = async (req, res, next) => {
     });
 
 };
-
 
 const updateCartItem = async (req,res,next) => {
     const bookId = req.params.bookId;
@@ -58,9 +59,59 @@ const updateCartItem = async (req,res,next) => {
     
 }
 
+const removeFromCart = async (req, res, next) => {
+    const { bookId } = req.params;
+    const user = await UserModel.findById(req.user.userId);
+    if (!user) return next(new AppError("User not found", 404));
+    
+    user.cart = user.cart.filter((item) => item.book != bookId);
+    await user.save();
+
+    res.json({ success: true, message: "Removed from cart" });
+};
+
+const getCart = async (req, res) => {
+  
+    const user = await UserModel.findById(req.user.userId)
+    .populate({
+      path: "cart.book",
+      select: "title author price images condition",
+      populate: { 
+        path: "seller", 
+        select: "username phone" 
+      },
+    });
+
+    if (!user) return next(new AppError("User not found", 404));
+
+    const cartWithDetails = user.cart.map((item) => ({
+      _id: item.book._id,
+      title: item.book.title,
+      author: item.book.author,
+      price: item.book.price,
+      images: item.book.images,
+      condition: item.book.condition,
+      quantity: item.quantity,
+      totalPrice: item.book.price * item.quantity,
+    }));
+
+    const total = cartWithDetails.reduce(
+      (sum, item) => sum + item.totalPrice,
+      0
+    );
+
+    res.json({
+      success: true,
+      data: cartWithDetails,
+      totalItems: user.cart.reduce((sum, item) => sum + item.quantity, 0),
+      totalPrice: total,
+    });
+};
 
 
 module.exports = {
   addToCart,
   updateCartItem,
+  removeFromCart,
+  getCart,
 };

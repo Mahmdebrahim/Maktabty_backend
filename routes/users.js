@@ -30,7 +30,7 @@ router.post("/auth/register", signupValidation,signUp );
 // ?? login Logic
 router.post("/auth/login", loginValidation, login);
 // ?? logout
-router.post("/logout", authMW,logout);
+router.post("/auth/logout", authMW,logout);
 
 // ** get user by id
 router.get("/auth/profile", authMW, getMyProfile);

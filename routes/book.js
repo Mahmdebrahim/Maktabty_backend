@@ -6,7 +6,6 @@ const addBookValidation = require("../middlewares/bookvalidation.js");
 const { addBook } = require("../controllers/bookControllers.js");
 const {
   getBooks,
-  getCategories,
   getSingleBook,
   updateBook,
   delelteBook,
@@ -25,7 +24,7 @@ router.delete("/:bookId", authMW, isSeller, delelteBook);
 
 
 /////////////////////////////////////////////////
-router.get("/categories", authMW, getCategories);
+
 
 
 module.exports = router;

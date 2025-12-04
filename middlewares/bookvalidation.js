@@ -11,12 +11,17 @@ const addBookSchema = Joi.object({
     "any.required": "title is required",
   }),
 
-  author: Joi.string().min(3).max(70).required().messages({
-    "string.empty": "author is required",
-    "string.min": "author must be at least 3 characters long",
-    "string.max": "author must be at most 70 characters long",
-    "any.required": "author is required",
-  }),
+  author: Joi.array()
+    .items(Joi.string().min(3).max(70))
+    .min(1)
+    .required()
+    .messages({
+      "array.base": "author must be an array",
+      "array.empty": "author array cannot be empty",
+      "string.empty": "author names cannot be empty",
+      "string.max": "each author name must be at most 70 characters long",
+      "any.required": "author is required",
+    }),
 
   publishedYear: Joi.number()
     .integer()
@@ -45,26 +50,31 @@ const addBookSchema = Joi.object({
   }),
 
   condition: Joi.string()
-    .valid("new", "like new", "very good", "good", "acceptable")
+    .valid("new", "very good", "good", "exellant", "old")
     .default("good")
     .messages({
-      "any.only":
-        "condition must be one of: new, like new, very good, good, acceptable",
+      "any.only": "condition must be one of: new, very good, good, exellant, old",
     }),
 
-  category: Joi.string()
-    .valid(...CATEGORIES.map((category) => category.value))
-    .required()
-    .messages({
-      "any.only": "must be a valid category",
-      "any.required": "category is required",
-    }),
+  category: Joi.string().required().messages({
+    "string.empty": "category is required",
+    "any.required": "category is required",
+  }),
+
+  subCategory: Joi.string().optional().messages({
+    "string.base": "subCategory must be a string",
+  }),
 
   description: Joi.string().min(10).max(1000).required().messages({
     "string.empty": "description is required",
     "string.min": "description must be at least 10 characters long",
     "string.max": "description must be at most 1000 characters long",
-    "any.required":"description is required",
+    "any.required": "description is required",
+  }),
+
+  images: Joi.string().optional().messages({
+    "array.base": "images must be an array",
+    "string.uri": "each image must be a valid URL",
   }),
 });
 
@@ -76,6 +86,5 @@ const addBookValidation = (req, res, next) => {
   }
   next();
 };
-
 
 module.exports = addBookValidation;

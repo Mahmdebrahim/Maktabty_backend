@@ -11,7 +11,7 @@ const signSchema = joi.object({
   password: joi.string().min(5).max(20).required(),
   username: joi.string().min(5).max(20).required(),
   phone: joi.string().min(5).max(20).required(),
-  role: joi.string().valid("seller", "admin", "user").default("user"),
+  role: joi.string().valid("seller","user").default("user"),
 });
 
 const signupValidation = (req,res,next) =>{

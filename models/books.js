@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const CATEGORIES = require("../constants/categories.js");
 
 const bookSchema = new mongoose.Schema({
   title: {
@@ -28,24 +27,24 @@ const bookSchema = new mongoose.Schema({
   },
   quantity: {
     type: Number,
-    
     required: true,
   },
-  images: [
-    {
-      type: String,
-    },
-  ],
+  images:{
+    type:String,
+  },
   condition: {
     type: String,
-    enum: ["good","very good","new","exellant",],
-    default: "جيد",
+    enum: ["good","very good","new","exellant","old"],
+    default: "good",
   },
   category: {
-    type: String,
-    required: true,
-    enum: CATEGORIES.map((c) => c.value),
-    default: "other",
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true
+  },
+  subCategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
   },
   isSoldOut: {
     type: Boolean,
