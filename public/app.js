@@ -8,11 +8,13 @@ const app = {
   favorites: [],
   books: [],
   categories: [],
+  subCategories: [],
   currentUserBooks: [],
   currentPage: 1,
   totalPages: 1,
   filters: {},
   pendingOrder: null,
+  currentReviewRating: 0,
 
   // Initialize app
   init() {
@@ -100,6 +102,45 @@ const app = {
     }, 3000);
   },
 
+  // Handle API Error - Extract message from response or error object
+  handleError(error, customErrorElement = null) {
+    let errorMessage = "An error occurred";
+
+    // If error object has a message property
+    if (error && error.message) {
+      errorMessage = error.message;
+    }
+    // If error is a string
+    else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
+    // Show in custom error element if provided
+    if (customErrorElement) {
+      const element = document.getElementById(customErrorElement);
+      if (element) {
+        element.textContent = errorMessage;
+        element.classList.add("show");
+      }
+    } else {
+      // Show as notification (error type)
+      this.showNotification(errorMessage, "error");
+    }
+
+    console.error("Error:", errorMessage);
+  },
+
+  // Extract error message from API response
+  async extractErrorMessage(response) {
+    try {
+      const data = await response.clone().json();
+      // Backend sends message directly at top level
+      return data.message || data.error || "Request failed";
+    } catch {
+      return response.statusText || "Request failed";
+    }
+  },
+
   // Toggle Auth Modal
   toggleAuthModal() {
     const modal = document.getElementById("authModal");
@@ -144,7 +185,8 @@ const app = {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
 
       this.currentUser = data.user;
@@ -156,8 +198,7 @@ const app = {
       this.showNotification("✓ Logged in successfully");
       this.showHome();
     } catch (error) {
-      document.getElementById("loginError").textContent = error.message;
-      document.getElementById("loginError").classList.add("show");
+      this.handleError(error, "loginError");
     } finally {
       this.showLoader(false);
     }
@@ -184,15 +225,15 @@ const app = {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
 
       this.showNotification("✓ Registration successful! Please log in.");
       this.switchAuthTab("login");
       document.getElementById("loginEmail").value = email;
     } catch (error) {
-      document.getElementById("registerError").textContent = error.message;
-      document.getElementById("registerError").classList.add("show");
+      this.handleError(error, "registerError");
     } finally {
       this.showLoader(false);
     }
@@ -288,6 +329,7 @@ const app = {
   // Load Categories
   async loadCategories() {
     try {
+      // Load parent categories
       const response = await fetch(`${API_URL}/categories/tree`, {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -296,17 +338,63 @@ const app = {
         credentials: "include",
       });
 
-      if (response.ok) {
+      // Load all subcategories
+      const subResponse = await fetch(`${API_URL}/categories/subcategories`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok && subResponse.ok) {
         const data = await response.json();
+        const subData = await subResponse.json();
+
         this.categories = data.data || [];
+        this.subCategories = subData.data || [];
         this.populateCategorySelects();
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.log("Error loading categories:", error);
     }
   },
 
-  // Handle Category Change
+  // Handle Category Filter Change
+  onCategoryFilterChange() {
+    const categoryId = document.getElementById("categoryFilter").value;
+    const subCategoryFilter = document.getElementById("subcategoryFilter");
+
+    subCategoryFilter.innerHTML =
+      '<option value="">All Sub Categories</option>';
+
+    if (!categoryId) {
+      // Show all subcategories when no category selected
+      this.subCategories.forEach((subCat) => {
+        subCategoryFilter.innerHTML += `<option value="${subCat._id}">${subCat.name}</option>`;
+      });
+    } else {
+      // Find subcategories belonging to selected category
+      const selectedCat = this.categories.find((cat) => cat._id === categoryId);
+
+      if (
+        selectedCat &&
+        selectedCat.children &&
+        selectedCat.children.length > 0
+      ) {
+        selectedCat.children.forEach((subCat) => {
+          subCategoryFilter.innerHTML += `<option value="${subCat._id}">${subCat.name}</option>`;
+        });
+      }
+    }
+
+    this.filterBooks();
+  },
+
+  // Handle Category Change (for add book form)
   onCategoryChange() {
     const categoryId = document.getElementById("bookCategory").value;
     const subCategorySelect = document.getElementById("bookSubCategory");
@@ -334,6 +422,7 @@ const app = {
   populateCategorySelects() {
     const categorySelect = document.getElementById("bookCategory");
     const categoryFilter = document.getElementById("categoryFilter");
+    const subcategoryFilter = document.getElementById("subcategoryFilter");
     const categoryParent = document.getElementById("categoryParent");
 
     if (categorySelect) {
@@ -347,6 +436,14 @@ const app = {
       categoryFilter.innerHTML = '<option value="">All Categories</option>';
       this.categories.forEach((cat) => {
         categoryFilter.innerHTML += `<option value="${cat._id}">${cat.name}</option>`;
+      });
+    }
+
+    if (subcategoryFilter) {
+      subcategoryFilter.innerHTML =
+        '<option value="">All Sub Categories</option>';
+      this.subCategories.forEach((subCat) => {
+        subcategoryFilter.innerHTML += `<option value="${subCat._id}">${subCat.name}</option>`;
       });
     }
 
@@ -395,8 +492,7 @@ const app = {
         ).textContent = `Page ${this.currentPage} of ${this.totalPages}`;
       }
     } catch (error) {
-      console.log("Error loading books:", error);
-      this.showNotification("Error loading books", "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -407,6 +503,7 @@ const app = {
     this.filters = {
       search: document.getElementById("searchInput")?.value || "",
       category: document.getElementById("categoryFilter")?.value || "",
+      subCategory: document.getElementById("subcategoryFilter")?.value || "",
       minPrice: document.getElementById("minPrice")?.value || "",
       maxPrice: document.getElementById("maxPrice")?.value || "",
       condition: document.getElementById("conditionFilter")?.value || "",
@@ -570,14 +667,186 @@ const app = {
                                   book._id
                                 }')">❤️ Add to Favorites</button>
                             </div>
+                            
+                            <div class="reviews-section">
+                              <h3>Reviews & Ratings</h3>
+                              <div id="reviewsList" class="reviews-list"></div>
+                              <div id="reviewForm" class="review-form">
+                                <h4>Add Your Review</h4>
+                                <div class="rating-input">
+                                  <label>Rating:</label>
+                                  <div class="stars">
+                                    ${[1, 2, 3, 4, 5]
+                                      .map(
+                                        (star) =>
+                                          `<span class="star" onclick="app.setReviewRating(${star})" data-rating="${star}">★</span>`
+                                      )
+                                      .join("")}
+                                  </div>
+                                  <span id="ratingValue">0/5</span>
+                                </div>
+                                <textarea id="reviewComment" placeholder="Share your thoughts..." maxlength="2000"></textarea>
+                                <button onclick="app.submitReview('${
+                                  book._id
+                                }')" class="btn-primary">Submit Review</button>
+                              </div>
+                            </div>
                         </div>
                     </div>
                 `;
 
         document.getElementById("bookModal").classList.add("active");
+
+        // Load reviews
+        this.loadReviews(bookId);
       }
     } catch (error) {
       console.log("Error viewing book:", error);
+    }
+  },
+
+  // Set Review Rating
+  setReviewRating(rating) {
+    this.currentReviewRating = rating;
+    document.getElementById("ratingValue").textContent = `${rating}/5`;
+
+    // Update star display
+    document.querySelectorAll(".star").forEach((star) => {
+      const starRating = parseInt(star.dataset.rating);
+      star.classList.toggle("active", starRating <= rating);
+    });
+  },
+
+  // Load Reviews
+  async loadReviews(bookId) {
+    try {
+      const response = await fetch(`${API_URL}/reviews/${bookId}`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.displayReviews(data.data || [], data.averageRating || 0);
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        console.warn("Error loading reviews:", errorMsg);
+        document.getElementById("reviewsList").innerHTML = `
+          <div class="empty-reviews">
+            <p>No reviews yet. Be the first to review!</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.log("Error loading reviews:", error);
+      document.getElementById("reviewsList").innerHTML = `
+        <div class="empty-reviews">
+          <p>No reviews yet. Be the first to review!</p>
+        </div>
+      `;
+    }
+  },
+
+  // Display Reviews
+  displayReviews(reviews, avgRating) {
+    const reviewsList = document.getElementById("reviewsList");
+
+    if (!reviews || reviews.length === 0) {
+      reviewsList.innerHTML = `
+        <div class="empty-reviews">
+          <p>No reviews yet. Be the first to review!</p>
+        </div>
+      `;
+      return;
+    }
+
+    let reviewsHTML = `
+      <div class="reviews-stats">
+        <div class="avg-rating">
+          <div class="rating-number">${avgRating.toFixed(1)}</div>
+          <div class="rating-stars">${"★".repeat(
+            Math.round(avgRating)
+          )}${"☆".repeat(5 - Math.round(avgRating))}</div>
+          <p>Based on ${reviews.length} review${
+      reviews.length !== 1 ? "s" : ""
+    }</p>
+        </div>
+      </div>
+      <div class="reviews-container">
+    `;
+
+    reviews.forEach((review) => {
+      const stars = "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
+      reviewsHTML += `
+        <div class="review-item">
+          <div class="review-header">
+            <strong>${review.user?.username || "Anonymous"}</strong>
+            <span class="review-rating">${stars}</span>
+          </div>
+          <p class="review-comment">${review.comment || "No comment"}</p>
+          <small class="review-date">${new Date(
+            review.createdAt
+          ).toLocaleDateString()}</small>
+        </div>
+      `;
+    });
+
+    reviewsHTML += "</div>";
+    reviewsList.innerHTML = reviewsHTML;
+  },
+
+  // Submit Review
+  async submitReview(bookId) {
+    if (!this.currentUser) {
+      this.showNotification("Please log in to submit a review", "warning");
+      return;
+    }
+
+    const rating = this.currentReviewRating || 0;
+    const comment = document.getElementById("reviewComment")?.value || "";
+
+    if (rating === 0) {
+      this.showNotification("Please select a rating", "warning");
+      return;
+    }
+
+    try {
+      this.showLoader(true);
+
+      const response = await fetch(`${API_URL}/reviews/${bookId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ rating, comment }),
+      });
+
+      if (response.ok) {
+        this.showNotification("✓ Review submitted successfully");
+
+        // Reset form
+        this.currentReviewRating = 0;
+        document.getElementById("ratingValue").textContent = "0/5";
+        document.getElementById("reviewComment").value = "";
+        document
+          .querySelectorAll(".star")
+          .forEach((star) => star.classList.remove("active"));
+
+        // Reload reviews
+        this.loadReviews(bookId);
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      this.handleError(error);
+    } finally {
+      this.showLoader(false);
     }
   },
 
@@ -607,10 +876,11 @@ const app = {
       if (response.ok) {
         this.showNotification("✓ Added to cart");
       } else {
-        throw new Error("Failed to add to cart");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      this.showNotification(error.message, "error");
+      this.handleError(error);
     }
   },
 
@@ -639,9 +909,12 @@ const app = {
           isFavorite ? "✓ Removed from favorites" : "✓ Added to favorites"
         );
         this.loadFavorites();
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.log("Error toggling favorite:", error);
+      this.handleError(error);
     }
   },
 
@@ -662,6 +935,9 @@ const app = {
         const data = await response.json();
         this.favorites = data.data.favorites || [];
         this.renderFavorites();
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.log("Error loading favorites:", error);
@@ -749,9 +1025,12 @@ const app = {
         const data = await response.json();
         this.cart = data.data || [];
         this.renderCart();
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.log("Error loading cart:", error);
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -887,11 +1166,11 @@ const app = {
         this.showNotification("✓ Item removed from cart");
         await this.loadCart();
       } else {
-        this.showNotification("Failed to remove item", "error");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.log("Error removing from cart:", error);
-      this.showNotification("Error removing item", "error");
+      this.handleError(error);
     }
   },
 
@@ -1112,9 +1391,12 @@ const app = {
       if (response.ok) {
         const data = await response.json();
         this.renderMyBooks(data.data || []);
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.log("Error loading my books:", error);
+      this.handleError(error);
     }
   },
 
@@ -1247,14 +1529,11 @@ const app = {
 
         this.loadMyBooks();
       } else {
-        const error = await response.json();
-        throw new Error(
-          error.message ||
-            (isEdit ? "Failed to update book" : "Failed to add book")
-        );
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      this.showNotification(error.message, "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -1333,10 +1612,11 @@ const app = {
         this.showNotification("✓ Book deleted successfully");
         this.loadMyBooks();
       } else {
-        throw new Error("Failed to delete book");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      this.showNotification(error.message, "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -1377,9 +1657,12 @@ const app = {
       if (response.ok) {
         const data = await response.json();
         this.renderMySales(data.data || []);
+      } else {
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.log("Error loading my sales:", error);
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -1808,11 +2091,11 @@ const app = {
         const data = await response.json();
         return data.order || data.data;
       } else {
-        throw new Error("Failed to fetch order details");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error("Error fetching order:", error);
-      this.showNotification("Error loading order details", "error");
+      this.handleError(error);
       return null;
     }
   },
@@ -1832,8 +2115,7 @@ const app = {
       document.getElementById("orderDetailsContent").innerHTML = orderHTML;
       document.getElementById("orderDetailsModal").classList.add("active");
     } catch (error) {
-      console.error("Error viewing order details:", error);
-      this.showNotification("Error loading order details", "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -1994,11 +2276,11 @@ const app = {
           await this.loadMySales();
         }
       } else {
-        throw new Error("Failed to update order status");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
-      this.showNotification("Error updating order status", "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -2029,11 +2311,11 @@ const app = {
         this.currentUser = user;
         this.displayProfile(user);
       } else {
-        this.showNotification("Failed to load profile", "error");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
-      this.showNotification("Error loading profile", "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }
@@ -2119,14 +2401,11 @@ const app = {
         document.getElementById("profileError").classList.remove("show");
         this.showNotification("✓ Profile updated successfully", "success");
       } else {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update profile");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
-      document.getElementById("profileError").textContent = error.message;
-      document.getElementById("profileError").classList.add("show");
-      this.showNotification(error.message, "error");
+      this.handleError(error, "profileError");
     } finally {
       this.showLoader(false);
     }
@@ -2168,11 +2447,11 @@ const app = {
         const orders = Array.isArray(data.data) ? data.data : data.orders || [];
         this.displayUserOrders(orders);
       } else {
-        this.showNotification("Failed to load orders", "error");
+        const errorMsg = await this.extractErrorMessage(response);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error("Error loading orders:", error);
-      this.showNotification("Error loading orders", "error");
+      this.handleError(error);
     } finally {
       this.showLoader(false);
     }

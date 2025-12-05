@@ -7,6 +7,7 @@ const cartRoutes = require("./routes/cart.js");
 const orderRoutes = require("./routes/order.js");
 const categoriesRoutes = require("./routes/categories.js");
 const adminRoutes = require("./routes/admin.js");
+const reviewRoutes = require("./routes/review.js");
 const errorMiddleWare = require("./middlewares/error.js");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
@@ -18,6 +19,7 @@ const connectDB = require("./config/db.js");
 app.set("view engine", "ejs");
 
 // Serve static files from public folder
+//!!
 app.use(express.static("public"));
 
 app.use(morgan("combined"));
@@ -32,8 +34,9 @@ app.use("/cart", cartRoutes);
 app.use("/orders", orderRoutes);
 app.use("/categories", categoriesRoutes);
 app.use("/admin", adminRoutes);
+app.use("/reviews", reviewRoutes);
 
-app.use(errorMiddleWare.handle);
+app.use(errorMiddleWare);
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);

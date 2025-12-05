@@ -61,6 +61,7 @@ const getBooks = async (req, res, next) => {
     page = 1,
     limit = 10,
     category,
+    subCategory,
     minPrice,
     maxPrice,
     condition,
@@ -71,6 +72,7 @@ const getBooks = async (req, res, next) => {
   // ** filtered queries
   const query = {};
   if (category) query.category = category;
+  if (subCategory) query.subCategory = subCategory;
   if (minPrice && maxPrice) {
     query.price = { $gte: minPrice, $lte: maxPrice };
   } else if (minPrice) {
@@ -93,6 +95,10 @@ const getBooks = async (req, res, next) => {
     .limit(limit)
     .populate("seller", "username phone")
     .populate("category", "name")
+    .populate({
+      path: "reviews",
+      populate: { path: "user", select: "username" },
+    })
     .sort({ createdAt: -1 });
 
   if (!books) return next(new Error("No books found", 404));

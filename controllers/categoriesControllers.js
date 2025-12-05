@@ -17,13 +17,20 @@ const getCategoryTree = async (req, res,next) => {
     res.json({ success: true, data: categories });
 };
 
-// 2. جلب الفروع بتاعة كاتيجوري معينة
-const getSubCategories = async (req, res) => {
+const getAllSubCategories = async (req, res,next) => {
+    const categories = await CategoryModel.find({ parent: { $ne: null }, isActive: true }).lean({ virtuals: true });
+    if (!categories) {
+        return next(new AppError("No categories found", 404));
+    }
+    res.json({ success: true, data: categories });
+}
+
+const getSubCategories = async (req, res,next) => {
     const { categoryId } = req.params;
 
     const category = await CategoryModel.findById(categoryId)
       .populate("children")
-      .lean({ virtuals: true }); // ← لازم عشان children تظهر
+      .lean({ virtuals: true });
 
     if (!category) {
         return next(new AppError("Category not found", 404));
@@ -58,4 +65,5 @@ module.exports = {
   getCategoryTree,
   getSubCategories,
   addCategory,
+  getAllSubCategories,
 };

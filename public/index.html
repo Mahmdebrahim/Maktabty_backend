@@ -82,8 +82,11 @@
               placeholder="Search books..."
               onkeyup="app.filterBooks()"
             />
-            <select id="categoryFilter" onchange="app.filterBooks()">
+            <select id="categoryFilter" onchange="app.onCategoryFilterChange()">
               <option value="">All Categories</option>
+            </select>
+            <select id="subcategoryFilter" onchange="app.filterBooks()">
+              <option value="">All Sub Categories</option>
             </select>
             <input
               type="number"

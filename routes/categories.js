@@ -7,10 +7,12 @@ const {
   getCategoryTree,
   getSubCategories,
   addCategory,
+  getAllSubCategories,
 } = require("../controllers/categoriesControllers.js");
 
 
 router.get("/tree", authMW, getCategoryTree); 
+router.get("/subcategories", authMW, getAllSubCategories);
 router.get("/:categoryId/subcategories", authMW, getSubCategories); 
 router.post("/", authMW,  addCategory); 
 

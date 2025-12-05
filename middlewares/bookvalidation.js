@@ -76,6 +76,7 @@ const addBookSchema = Joi.object({
     "array.base": "images must be an array",
     "string.uri": "each image must be a valid URL",
   }),
+  
 });
 
 // ** to check the validation and throw error to the error handling

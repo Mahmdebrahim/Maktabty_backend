@@ -2103,3 +2103,226 @@ body {
     }
 }
 
+/* Reviews Section */
+.reviews-section {
+    margin-top: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border-top: 3px solid var(--secondary-color);
+}
+
+.reviews-section h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.reviews-list {
+    margin-bottom: 2rem;
+}
+
+.reviews-stats {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--white);
+    border-radius: 10px;
+    border-left: 4px solid var(--secondary-color);
+}
+
+.avg-rating {
+    text-align: center;
+    flex: 0 0 auto;
+}
+
+.rating-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+.rating-stars {
+    font-size: 1.5rem;
+    color: var(--warning-color);
+    margin: 0.5rem 0;
+    letter-spacing: 0.2rem;
+}
+
+.reviews-stats p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.reviews-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.review-item {
+    padding: 1.5rem;
+    background: var(--white);
+    border-radius: 10px;
+    border-left: 4px solid var(--secondary-light);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.review-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(4px);
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+.review-header strong {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.review-rating {
+    color: var(--warning-color);
+    font-size: 1.1rem;
+    letter-spacing: 0.1rem;
+}
+
+.review-comment {
+    color: var(--dark-text);
+    line-height: 1.6;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.review-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    display: block;
+}
+
+.empty-reviews {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-reviews p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.review-form {
+    padding: 2rem;
+    background: var(--white);
+    border-radius: 10px;
+    border: 2px solid var(--secondary-light);
+}
+
+.review-form h4 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.rating-input {
+    margin-bottom: 1.5rem;
+}
+
+.rating-input label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.stars {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 2rem;
+}
+
+.star {
+    cursor: pointer;
+    color: #ddd;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.star:hover {
+    color: var(--warning-color);
+    transform: scale(1.2);
+}
+
+.star.active {
+    color: var(--warning-color);
+}
+
+#ratingValue {
+    display: inline-block;
+    margin-left: 1rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--secondary-light);
+    color: var(--white);
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+#reviewComment {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+#reviewComment:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.review-form .btn-primary {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .reviews-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .review-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .reviews-section {
+        padding: 1.5rem;
+    }
+
+    .review-form {
+        padding: 1.5rem;
+    }
+}
+
