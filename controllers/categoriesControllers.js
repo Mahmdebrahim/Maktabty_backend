@@ -22,6 +22,7 @@ const getAllSubCategories = async (req, res,next) => {
     if (!categories) {
         return next(new AppError("No categories found", 404));
     }
+    
     res.json({ success: true, data: categories });
 }
 
